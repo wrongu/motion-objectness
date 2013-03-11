@@ -1,4 +1,4 @@
 .DS_Store
 tmpdir/
 *.m~
-Data/params.mat
+segment/
