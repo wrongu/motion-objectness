@@ -60,3 +60,13 @@ params.SS.pixelDistance = 8;
 params.SS.imageBorder = 0.05;
 params.SS.bincenters = 0:0.01:1;
 params.SS.numberBins = length(params.SS.bincenters) - 1;
+
+%parmas for MOT (Motion segmentation)
+params.MOT.name = 'Motion Segmentation';
+params.MOT.startframe = 0;
+params.MOT.endframe = 50;
+params.MOT.sampling = 8;
+% params.MOT.bmfFile = fullfile(dirRoot, 'moseg', 'marple2', 'marple2.bmf');
+% params.MOT.executable = fullfile(dirRoot, 'moseg', 'motionsegBM');
+params.MOT.bmfFile = fullfile(dirRoot, 'moseg2012', 'marple2', 'marple2.bmf');
+params.MOT.executable = fullfile(dirRoot, 'moseg2012', 'motionsegOB');
