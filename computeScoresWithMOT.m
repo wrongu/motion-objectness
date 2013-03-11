@@ -1,5 +1,5 @@
-function boxes = computeScores(img,cue,params,windows)
-
+function boxes = computeScoresWithMOT(img_name,cue,params,windows)
+img = imread(fullfile(fileparts(params.MOT.bmfFile), img_name));
 
 if nargin<4
     %no windows provided - so generate them -> single cues
@@ -64,20 +64,20 @@ if nargin<4
         case 'CC'
             
             windows = generateWindows(img, 'uniform', params);%generate windows
-            boxes = computeScores(img, cue, params, windows);
+            boxes = computeScoresWithMOT(img_name, cue, params, windows);
             
         case 'ED'                       
             
             windows = generateWindows(img, 'dense', params, cue);%generate windows           
-            boxes = computeScores(img, cue, params, windows);
+            boxes = computeScoresWithMOT(img_name, cue, params, windows);
             
         case 'SS'
             windows = generateWindows(img,'dense', params, cue);
-            boxes = computeScores(img, cue, params, windows);
+            boxes = computeScoresWithMOT(img_name, cue, params, windows);
             
         case 'MOT'
             windows = generateWindows(img,'dense', params, cue);
-            boxes = computeScores(img, cue, params, windows);
+            boxes = computeScoresWithMOT(img_name, cue, params, windows);
     end
     
 else
@@ -205,26 +205,26 @@ else
         %   straddling, but with segmented trajectory points)
         %   Most code copied from 'SS' case, above
         case 'MOT'
+            fprintf('searching for %s in bmf file.. ', img_name);
             % first, check to see if 'img' parameter is part of video
             % sequence definde in params.MOT.bfmFile
-            im_dir = fileparts(params.MOT.bmfFile);
+            [~, imgName] = fileparts(img_name);
             fid = fopen(params.MOT.bmfFile);
             frame = '';
             line = fgetl(fid);
             while ischar(line)
-                if exist(fullfile(im_dir, line), 'file')
-                    I_temp = imread(fullfile(im_dir, line));
-                    if all(all(all(img == I_temp)))
-                        frame = line;
-                        break;
-                    end
+                if strfind(line, imgName)
+                    frame = line;
+                    break;
                 end
+                line = fgetl(fid);
             end
-            clear I_temp line;
+            clear line;
             fclose(fid);
             
             % if we found the matching image, carry on..
             if ~isempty(frame)
+                fprintf('found!\n');
                 % get frame number of image in question
                 idx = length(frame)-4;
                 while '0' <= frame(idx) && frame(idx) <='9'
@@ -233,17 +233,22 @@ else
                 n_str = frame(idx+1:length(frame)-4);
                 frame_n = sscanf(n_str, '%d');
                 clear idx n_str;
+                fprintf('frame parsed: %d\n', frame_n);
                 % execute motion segmentation algorithm. Defaults will save
                 % results to moseg2012/marple2/OchsBroxResults/
                 % (max and min ensure the given frame is included)
                 sf = min(params.MOT.startframe, frame_n);
-                ef = max(params.MOT.endFrame, frame_n);
+                ef = max(params.MOT.endframe, frame_n);
                 cmd = [params.MOT.executable ' ' params.MOT.bmfFile ' ' ...
                         sf ' ' ef  ' ' params.MOT.sampling];
+                fprintf('%s\n', cmd);
                 system(cmd);
                 
-                Tracks = readTracksFile(fullfile(params.MOT.resultsDir, ...
-                            ['Tracks' (ef-sf+1) '.dat']));
+                tracks_f = fullfile(params.MOT.resultsDir, ...
+                            ['Tracks' (ef-sf+1) '.dat']);
+                fprintf('reading tracks file %s\n', tracks_f);
+                Tracks = readTracksFile(tracks_f);
+                disp('slicing');
                 S = sliceTracks(Tracks, frame_n);
                 
                 % sanity-check plot:
@@ -281,6 +286,8 @@ else
                 score = ones(size(windows,1),1) - (sum(min(intersectionSuperpixels,repmat(areaSuperpixels,size(windows,1),1) - intersectionSuperpixels),2)./areaWindows);
                 boxes = [windows score];
                 %}
+            else
+                fprintf('not found =(\n');
             end
             
         otherwise

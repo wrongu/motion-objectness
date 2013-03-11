@@ -4,10 +4,10 @@
 % Author: Richard Lange
 % Date Created: March 11, 2013
 
-function boxes = runMotionObjectness(bmfFile, numberSamples, params)
+function boxes = runMotionObjectness(numberSamples, params)
 dir_root = pwd;%change this to an absolute path
-
-if nargin < 3
+img = params.MOT.frame;
+if nargin < 2
     try            
         struct = load([dir_root '/Data/params.mat']);
         params = struct.params;
@@ -21,7 +21,7 @@ end
 if length(params.cues)==1    
     %single cues
     
-    distributionBoxes = computeScores(bmfFile,params.cues{1},params); 
+    distributionBoxes = computeScoresWithMOT(img,params.cues{1},params); 
     
     switch lower(params.sampling)
         case 'nms'
@@ -62,7 +62,7 @@ else
         return
     end
     
-    distributionBoxes = computeScores(bmfFile,'MS',params);    
+    distributionBoxes = computeScoresWithMOTWithMOT(img,'MS',params);    
     %rearrange the cues such that 'MS' is the first cue
     if ~strcmp(params.cues{1},'MS')
         params.cues{strcmp(params.cues,'MS')} = params.cues{1};
@@ -73,7 +73,7 @@ else
     score(:,1) = distributionBoxes(:,end);
     windows = distributionBoxes(:,1:4);
     for idx = 2:length(params.cues)
-        temp = computeScores(bmfFile,params.cues{idx},params,windows);
+        temp = computeScoresWithMOT(img,params.cues{idx},params,windows);
         score(:,idx) = temp(:,end);       
     end
     scoreBayes = integrateBayes(params.cues,score,params);      

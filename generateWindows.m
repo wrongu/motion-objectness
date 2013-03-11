@@ -40,7 +40,7 @@ switch optionGenerate
         windows = [xmin ymin xmax ymax];
         
     case 'dense' %for SS or ED
-        
+        fprintf('generating dense windows for %s\n', cue);
         pixelDistance = params.(cue).pixelDistance;
         imageBorder = params.(cue).imageBorder;
         
