@@ -6,14 +6,18 @@
 
 function movies = movieResults(images_path, start, finish)
     if(~exist('readFlowFile', 'file'))
-        fprintf('movieResults: must have the directory flow-code-matlab in the search path\n');
+        if(exist('flow-code-matlab', 'dir'))
+            addpath(fullfile(pwd, 'flow-code-matlab'));
+        else
+            fprintf('movieResults: must have the directory flow-code-matlab in the search path\n');
+        end
         return;
     end
     % prepare platform-independent file name format strings
-    ff = safe_fullfile('BroxMalikResults', 'ForwardFlow%s.flo');
-    bf = safe_fullfile('BroxMalikResults', 'BackwardFlow%s.flo'); 
-    tr = safe_fullfile('BroxMalikResults', 'Tracking%s.ppm'); 
-    sm = safe_fullfile('BroxMalikResults', 'Segments%s.ppm');
+    ff = safe_fullfile('images_path', 'BroxMalikResults', 'ForwardFlow%s.flo');
+    bf = safe_fullfile('images_path', 'BroxMalikResults', 'BackwardFlow%s.flo'); 
+    tr = safe_fullfile('images_path', 'BroxMalikResults', 'Tracking%s.ppm'); 
+    sm = safe_fullfile('images_path', 'BroxMalikResults', 'Segments%s.ppm');
     im = 'marple2_%s.ppm';
     
     movies(1).file = im; movies(1).movie = empty_movie();

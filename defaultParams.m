@@ -63,10 +63,13 @@ params.SS.numberBins = length(params.SS.bincenters) - 1;
 
 %parmas for MOT (Motion segmentation)
 params.MOT.name = 'Motion Segmentation';
+params.MOT.theta = 200;
 params.MOT.startframe = 0;
 params.MOT.endframe = 50;
 params.MOT.sampling = 8;
 % params.MOT.bmfFile = fullfile(dirRoot, 'moseg', 'marple2', 'marple2.bmf');
 % params.MOT.executable = fullfile(dirRoot, 'moseg', 'motionsegBM');
+% params.MOT.resultsDir = fullfile(dirRoot, 'moseg', 'marple2', 'BroxMalikResults');
 params.MOT.bmfFile = fullfile(dirRoot, 'moseg2012', 'marple2', 'marple2.bmf');
 params.MOT.executable = fullfile(dirRoot, 'moseg2012', 'motionsegOB');
+params.MOT.resultsDir = fullfile(dirRoot, 'moseg2012', 'marple2', 'OchsBroxResults');
