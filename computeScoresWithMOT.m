@@ -239,13 +239,17 @@ else
                 % (max and min ensure the given frame is included)
                 sf = min(params.MOT.startframe, frame_n);
                 ef = max(params.MOT.endframe, frame_n);
-                cmd = [params.MOT.executable ' ' params.MOT.bmfFile ' ' ...
-                        sf ' ' ef  ' ' params.MOT.sampling];
-                fprintf('%s\n', cmd);
-                system(cmd);
                 
                 tracks_f = fullfile(params.MOT.resultsDir, ...
-                            ['Tracks' (ef-sf+1) '.dat']);
+                    ['Tracks' num2str(ef-sf) '.dat']);
+                if ~exist(tracks_f, 'file')
+                    cmd = [params.MOT.executable ' ' params.MOT.bmfFile ' ' ...
+                        num2str(sf) ' ' num2str(ef)  ' ' ...
+                        num2str(params.MOT.sampling)];
+                    fprintf('%s\n------------\n', cmd);
+                    system(cmd);
+                end
+                
                 fprintf('reading tracks file %s\n', tracks_f);
                 Tracks = readTracksFile(tracks_f);
                 disp('slicing');
@@ -253,13 +257,16 @@ else
                 
                 % sanity-check plot:
                 colors = 'rbgcyk';
-                figure();
+                h = figure();
                 hold on;
                 for s=1:length(S)
                     scatter(S(s).points(1,:), S(s).points(2,:), colors(s));
                 end
                 hold off;
+                set(gca, 'YDir', 'reverse');
                 pause;
+                close(h);
+                boxes = [];
                 
                 % TODO ? integral image from points in S?
                 

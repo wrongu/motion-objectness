@@ -62,7 +62,7 @@ else
         return
     end
     
-    distributionBoxes = computeScoresWithMOTWithMOT(img,'MS',params);    
+    distributionBoxes = computeScoresWithMOT(img,'MS',params);    
     %rearrange the cues such that 'MS' is the first cue
     if ~strcmp(params.cues{1},'MS')
         params.cues{strcmp(params.cues,'MS')} = params.cues{1};
