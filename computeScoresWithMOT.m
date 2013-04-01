@@ -285,11 +285,8 @@ else
 %                 pause;
 %                 close(h);
 
-                % The following is similar to above  (case 'SS'), but
-                % instead of full superpixel images, 'areas' of superpixels
-                % are represented by the number of tracked points. This is
-                % based on the assumption that densities of points are
-                % comparable on different objects
+                N = sliceToSuperPixels(S, size(img, 2), size(img,1));
+                % The following is the same as the above  (case 'SS')
                 
                 % superpixels is a struct array with 'points' and 'area'
                 % fields
