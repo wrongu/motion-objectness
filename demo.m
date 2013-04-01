@@ -8,4 +8,4 @@
 params.MOT.bmfFile = 'moseg2012/marple2/marple2.bmf';
 
 boxes = runMotionObjectness(10,params);
-% figure,imshow(imgExample),drawBoxes(boxes);
+figure,imshow(fullfile(fileparts(params.MOT.resultsDir), params.MOT.frame)),drawBoxes(boxes);

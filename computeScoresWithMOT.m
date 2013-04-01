@@ -170,7 +170,9 @@ else
                 if not(strcmp(imgType, 'ppm'))
                     delete([imgBase '.ppm']);
                     delete(imgName);
-                end                
+                end
+                % S is a 3-channel _image_ (loaded from ppm) with
+                %   superpixels colored together
                 S = imread(segmFileName);
                 delete(segmFileName);
             else    % segmentation file found
@@ -178,20 +180,33 @@ else
             end         
             
             cd(currentDir);            
-            
+            % convert 3-channel S to 1-channel N where N(i,j)=k means that
+            % pixel (i,j) is in the kth cluster
             N = numerizeLabels(S);
-            superpixels = segmentArea(N);            
             
+            subplot(1,2,1);
+            image(N*64/max(max(N)));
+            set(gca, 'YDir', 'reverse');
+            subplot(1,2,2);
+            image(img);
+            pause;
+            
+            % get full set of [c;r] pixel coords in each super pixel, and
+            % area of each. IE superpixels(k).coords; and
+            % superpixels(k).area
+            superpixels = segmentArea(N);            
+            % break N apart and compute integral images (w+1, h+1, n_SS)
+            %   dimensions
             integralHist = integralHistSuperpixels(N);                        
             
             xmin = round(windows(:,1));
             ymin = round(windows(:,2));
             xmax = round(windows(:,3));
             ymax = round(windows(:,4));
-                                               
+            
             areaSuperpixels = [superpixels(:).area];
             areaWindows = (xmax - xmin + 1) .* (ymax - ymin + 1);
-            
+            % size: num windows X num superpixels
             intersectionSuperpixels = zeros(length(xmin),size(integralHist,3));
                         
             for dim = 1:size(integralHist,3)                
@@ -242,6 +257,8 @@ else
                 
                 tracks_f = fullfile(params.MOT.resultsDir, ...
                     ['Tracks' num2str(ef-sf) '.dat']);
+                % recompute motion segmentation iff result file does not
+                % exist
                 if ~exist(tracks_f, 'file')
                     cmd = [params.MOT.executable ' ' params.MOT.bmfFile ' ' ...
                         num2str(sf) ' ' num2str(ef)  ' ' ...
@@ -249,31 +266,41 @@ else
                     fprintf('%s\n------------\n', cmd);
                     system(cmd);
                 end
-                
+                % load trajectories from file
                 fprintf('reading tracks file %s\n', tracks_f);
                 Tracks = readTracksFile(tracks_f);
+                % slice out the frame we want
                 disp('slicing');
                 S = sliceTracks(Tracks, frame_n);
                 
                 % sanity-check plot:
-                colors = 'rbgcyk';
-                h = figure();
-                hold on;
-                for s=1:length(S)
-                    scatter(S(s).points(1,:), S(s).points(2,:), colors(s));
-                end
-                hold off;
-                set(gca, 'YDir', 'reverse');
-                pause;
-                close(h);
-                boxes = [];
-                
-                % TODO ? integral image from points in S?
-                
-                %{
-                N = numerizeLabels(S);
-                superpixels = segmentArea(N);            
+%                 colors = 'rbgcyk';
+%                 h = figure();
+%                 hold on;
+%                 for s=1:length(S)
+%                     scatter(S(s).points(1,:), S(s).points(2,:), colors(s));
+%                 end
+%                 hold off;
+%                 set(gca, 'YDir', 'reverse');
+%                 pause;
+%                 close(h);
+                % convert slice to image (so the format is compatible with
+                % the rest of the code from the 'SS' case
+                N = sliceToSuperPixels(S, size(img, 2), size(img, 1));
 
+                % TODO - currently, N is mostly 'background' with a few,
+                %   not contiguous pixels set for superpixels. need to
+                %   figure out how the segmentation paper gets full
+                %   superpixels from points of trajectories
+%                 subplot(1,2,1);
+%                 image(N*64/max(max(N)));
+%                 set(gca, 'YDir', 'reverse');
+%                 subplot(1,2,2);
+%                 image(img);
+%                 pause;
+
+                % The following is all the same as above  (case 'SS')
+                superpixels = segmentArea(N);   
                 integralHist = integralHistSuperpixels(N);                        
 
                 xmin = round(windows(:,1));
@@ -292,7 +319,6 @@ else
 
                 score = ones(size(windows,1),1) - (sum(min(intersectionSuperpixels,repmat(areaSuperpixels,size(windows,1),1) - intersectionSuperpixels),2)./areaWindows);
                 boxes = [windows score];
-                %}
             else
                 fprintf('not found =(\n');
             end
