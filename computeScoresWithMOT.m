@@ -284,23 +284,19 @@ else
 %                 set(gca, 'YDir', 'reverse');
 %                 pause;
 %                 close(h);
-                % convert slice to image (so the format is compatible with
-                % the rest of the code from the 'SS' case
-                N = sliceToSuperPixels(S, size(img, 2), size(img, 1));
 
-                % TODO - currently, N is mostly 'background' with a few,
-                %   not contiguous pixels set for superpixels. need to
-                %   figure out how the segmentation paper gets full
-                %   superpixels from points of trajectories
-%                 subplot(1,2,1);
-%                 image(N*64/max(max(N)));
-%                 set(gca, 'YDir', 'reverse');
-%                 subplot(1,2,2);
-%                 image(img);
-%                 pause;
-
-                % The following is all the same as above  (case 'SS')
-                superpixels = segmentArea(N);   
+                % The following is similar to above  (case 'SS'), but
+                % instead of full superpixel images, 'areas' of superpixels
+                % are represented by the number of tracked points. This is
+                % based on the assumption that densities of points are
+                % comparable on different objects
+                
+                % superpixels is a struct array with 'points' and 'area'
+                % fields
+                superpixels = segmentArea(N); 
+                % integralHist is a 3D matrix where the kth layer is the
+                % integral image for the kth superpixel. 
+                %   size(integralHist,3) := num of superpixels
                 integralHist = integralHistSuperpixels(N);                        
 
                 xmin = round(windows(:,1));
@@ -314,10 +310,23 @@ else
                 intersectionSuperpixels = zeros(length(xmin),size(integralHist,3));
 
                 for dim = 1:size(integralHist,3)                
+                    % compute the sum of the integral image _within each
+                    % window_. Since the IIs are binary, this is the
+                    % _count_ of the number of pixels from each SP in each
+                    % window.
+                    % Each ROW corresponds to a window. each COL to a
+                    % superpixel.
                     intersectionSuperpixels(:,dim) = computeIntegralImageScores(integralHist(:,:,dim),windows);                
                 end
-
-                score = ones(size(windows,1),1) - (sum(min(intersectionSuperpixels,repmat(areaSuperpixels,size(windows,1),1) - intersectionSuperpixels),2)./areaWindows);
+                % according to the paper:
+                % score = 1 - [SUM over superpixels](min([area inside window], [are outside window]) / [area of window])
+                score = ones(size(windows,1),1) - ...
+                    (sum( ...
+                        min( ... % note that min(), here, is element-wise since the two arguments are matrices of the same size
+                            intersectionSuperpixels, ...
+                            repmat(areaSuperpixels,size(windows,1), 1) - intersectionSuperpixels ...
+                        ), ...
+                     2)./areaWindows);
                 boxes = [windows score];
             else
                 fprintf('not found =(\n');
