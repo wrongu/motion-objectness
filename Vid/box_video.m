@@ -21,7 +21,8 @@ function annot_video = box_video(video, annotations, a_width, a_height, color)
         % draw box
         a = annotations{f};
         cdata = draw_box(cdata, ...
-            scale_box(video, [a.xtl a.ytl a.xbr a.ybr], a_width, a_height), color);
+            scale_box(video, [a.xtl a.ytl a.xbr a.ybr]+1, a_width, ...
+            a_height), color);
         % save frame
         annot_video(f).cdata = cdata;
     end
