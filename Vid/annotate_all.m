@@ -8,7 +8,7 @@ for c=1:length(classes)
     cname = class.name;
     if class.isdir && cname(1) ~= '.'
         vids = dir(fullfile(top_dir, '10class', cname, '*.avi'));
-        for v=1:length(vids)
+        parfor v=1:length(vids)
             fprintf('%s%s\n', cname, vids(v).name);
             if ~exist(fullfile(top_dir, 'combined', ...
                     sprintf('%s%.2d_annot.avi', cname, v)), 'file')
@@ -18,7 +18,8 @@ for c=1:length(classes)
                 mov = box_video(vid, a.annotations);
                 writer = VideoWriter(fullfile(top_dir, 'combined', ...
                     sprintf('%s%.2d_annot.avi', cname, v)));
-                writeVideo(writer, mov);
+                open(writer);
+		writeVideo(writer, mov);
             end
         end
     end

@@ -3,7 +3,7 @@
 function annot_video = box_video(video, annotations, color)
     vprops = get(video, {'Height', 'Width', 'NumberOfFrames'});
     h=vprops{1}; w=vprops{2}; frames=vprops{3};
-    assert(frames == length(annotations));
+   if(frames == length(annotations))
     
     if (nargin < 3)
         color = zeros(1,1,3);
@@ -26,5 +26,8 @@ function annot_video = box_video(video, annotations, color)
         cdata(a.ybr+1, a.xtl+1:a.xbr+1, :) = repmat(color, [a.xbr-a.xtl+1 1 1]);
         % save frame
         annot_video(f).cdata = cdata;
+    end
+    else
+        annot_video=struct('cdata', zeros(h,w,3,'uint8'), 'colormap', []);
     end
 end
