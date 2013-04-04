@@ -20,10 +20,10 @@ function annot_video = box_video(video, annotations, color)
         cdata = read(video, f);
         % draw box
         a = annotations{f};
-        cdata(a.ytl+1:a.ybr+1, a.xtl, :) = repmat(color, [a.ybr-a.ytl+1 1 1]);
-        cdata(a.ytl+1:a.ybr+1, a.xbr, :) = repmat(color, [a.ybr-a.ytl+1 1 1]);
-        cdata(a.ytl, a.xtl+1:a.xbr+1, :) = repmat(color, [a.xbr-a.xtl+1 1 1]);
-        cdata(a.ybr, a.xtl+1:a.xbr+1, :) = repmat(color, [a.xbr-a.xtl+1 1 1]);
+        cdata(a.ytl+1:a.ybr+1, a.xtl+1, :) = repmat(color, [a.ybr-a.ytl+1 1 1]);
+        cdata(a.ytl+1:a.ybr+1, a.xbr+1, :) = repmat(color, [a.ybr-a.ytl+1 1 1]);
+        cdata(a.ytl+1, a.xtl+1:a.xbr+1, :) = repmat(color, [a.xbr-a.xtl+1 1 1]);
+        cdata(a.ybr+1, a.xtl+1:a.xbr+1, :) = repmat(color, [a.xbr-a.xtl+1 1 1]);
         % save frame
         annot_video(f).cdata = cdata;
     end
