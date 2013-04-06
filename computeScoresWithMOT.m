@@ -254,17 +254,21 @@ else
                 % (max and min ensure the given frame is included)
                 sf = min(params.MOT.startframe, frame_n);
                 ef = max(params.MOT.endframe, frame_n);
+                sampling = params.MOT.theta;
                 
                 tracks_f = fullfile(params.MOT.resultsDir, ...
-                    ['Tracks' num2str(ef-sf) '.dat']);
+                    ['Tracks' num2str(ef-sf) '_' num2str(sampling) '.dat']);
                 % recompute motion segmentation iff result file does not
                 % exist
                 if ~exist(tracks_f, 'file')
                     cmd = [params.MOT.executable ' ' params.MOT.bmfFile ' ' ...
                         num2str(sf) ' ' num2str(ef)  ' ' ...
-                        num2str(params.MOT.sampling)];
+                        num2str(sampling)];
                     fprintf('%s\n------------\n', cmd);
                     system(cmd);
+                    outfile = fullfile(params.MOT.resultsDir, ...
+                        ['Tracks' num2str(ef-sf) '.dat']);
+                    movefile(outfile, tracks_f);
                 end
                 % load trajectories from file
                 fprintf('reading tracks file %s\n', tracks_f);
