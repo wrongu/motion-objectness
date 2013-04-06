@@ -1,1 +1,2 @@
+fix computeScoresMOT so it works with the data as formatted like in structGT_MOT
 find reasonable domain and bincenters for params.MOT

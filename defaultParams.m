@@ -9,15 +9,18 @@ params.min_window_height = 10;
 params.min_window_width  = 10;
 params.distribution_windows = 100000;
 params.sampled_windows = 1000;
-params.trainingImages = [dirRoot '/Training/Images/'];
-params.trainingExamples = [dirRoot '/Training/Images/Examples/'];
-params.imageType = 'jpg';
+params.trainingImages = [dirRoot '/Training/Videos/'];
+params.trainingLabels = [dirRoot '/Data/yourData/Youtube/annot/'];
+params.trainingExamples = [dirRoot '/Training/Videos/Examples/'];
+% params.trainingImages = [dirRoot '/Training/Images/'];
+% params.trainingExamples = [dirRoot '/Training/Images/Examples/'];
+% params.imageType = 'jpg';
 params.data = [dirRoot '/Data/'];
 params.yourData = [dirRoot '/Data/yourData/'];
 params.pobj = 0.0797;
 params.tempdir = [dirRoot '/tmpdir/'];
 params.pascalThreshold = 0.5;
-params.cues = {'MS','CC','SS'};%full objectness measure
+params.cues = {'MS','CC','SS','MOT'};%full objectness measure
 params.sampling = 'nms';%alternative sampling method - 'multinomial'
 
 %params for MS
@@ -63,16 +66,16 @@ params.SS.numberBins = length(params.SS.bincenters) - 1;
 
 %parmas for MOT (Motion segmentation)
 params.MOT.name = 'Motion Segmentation';
-params.MOT.theta = 200;
-params.MOT.pixelDistance = 8;
+params.MOT.theta = 8;
 params.MOT.imageBorder = 0.05;
 params.MOT.startframe = 0;
 params.MOT.endframe = 50;
 params.MOT.sampling = 8;
-params.MOT.frame = 'marple2_012.ppm';
+params.MOT.domain = [1 2 4 6 8 10 12 14 16 18 20];
+params.MOT.bincenters = 0:0.01:1;
 % params.MOT.bmfFile = fullfile(dirRoot, 'moseg', 'marple2', 'marple2.bmf');
 % params.MOT.executable = fullfile(dirRoot, 'moseg', 'motionsegBM');
 % params.MOT.resultsDir = fullfile(dirRoot, 'moseg', 'marple2', 'BroxMalikResults');
-params.MOT.bmfFile = fullfile(dirRoot, 'moseg2012', 'marple2', 'marple2.bmf');
-params.MOT.executable = fullfile(dirRoot, 'moseg2012', 'motionsegOB');
-params.MOT.resultsDir = fullfile(dirRoot, 'moseg2012', 'marple2', 'OchsBroxResults');
+% params.MOT.bmfFile = fullfile(dirRoot, 'moseg2012', 'marple2', 'marple2.bmf');
+% params.MOT.executable = fullfile(dirRoot, 'moseg2012', 'motionsegOB');
+% params.MOT.resultsDir = fullfile(dirRoot, 'moseg2012', 'marple2', 'OchsBroxResults');

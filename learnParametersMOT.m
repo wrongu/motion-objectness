@@ -24,7 +24,7 @@ end
 %learn parameters for MS
 for idx = 1: length(params.MS.scale)
     scale = params.MS.scale(idx);   
-    params.MS.theta(idx) = learnThetaMS(params,scale); 
+    params.MS.theta(idx) = learnThetaMSMOT(params,scale); 
 end
 
 try 
@@ -32,11 +32,11 @@ try
     posnegMS = struct.posnegMS;
     clear struct;
 catch    
-    posnegMS = generatePosNegMS(params);
+    posnegMS = generatePosNegMS_MOT(params);
     save([params.trainingExamples '/posnegMS.mat'],'posnegMS');
 end
 
-[likelihood pObj] = deriveLikelihoodMS(posnegMS,params);
+[~, pObj] = deriveLikelihoodMS(posnegMS,params);
 save([params.yourData 'MSlikelihood.mat'],'likelihood');
 params.pObj = pObj;
 
@@ -45,7 +45,7 @@ cues = {'CC','ED','SS','MOT'};
 
 for cid = 1:length(cues)
     cue = cues{cid};
-    [thetaOpt likelihood pobj] = learnThetaWithMOT(cue,params);
+    [thetaOpt, ~, ~] = learnThetaWithMOT(cue,params);
     params.(cue).theta = thetaOpt;    
     save([params.yourData upper(cue) 'likelihood'],'likelihood');
 end
@@ -55,19 +55,24 @@ save([params.yourData '/params.mat'],'params');
 end
 
 
-function posneg = generatePosNegMS(params)
+function posneg = generatePosNegMS_MOT(params)
 
-struct = load([params.trainingImages 'structGT.mat']);
-structGT= struct.structGT;
+struct = load([params.trainingImages 'structGT_MOT.mat']);
+structGT = struct.structGT_MOT;
 
-for idx = 1:length(structGT)    
-    img = imread([params.trainingImages structGT(idx).img]);
-    boxes = computeScores(img,'MS',params);        
-    posneg(idx).examples =  boxes(:,1:4);
-    labels = - ones(size(boxes,1),1);
+for idx = length(structGT):-1:1
+    V = VideoReader(fullfile(params.trainingImages, structGT(idx).vid));
+    img = read(V, structGT(idx).frame);
+    boxes = computeScoresWithMOT(img,'MS',params);        
+    posneg(idx).examples = boxes(:,1:4);
+    labels = -ones(size(boxes,1),1);
     for idx_window = 1:size(boxes,1)        
-        for bb_id = 1:size(structGT(idx).boxes,1)
-            pascalScore = computePascalScore(structGT(idx).boxes(bb_id,:),boxes(idx_window,1:4));
+        labelled_boxes = structGT(idx).boxes;
+        % if the box from computeScores has a high enough pascal score with
+        %   _any_ of the labels, score it 1 and break
+        for bb_idx = 1:size(labelled_boxes,1)
+            box = labelled_boxes(bb_idx,:);
+            pascalScore = computePascalScore(box, boxes(idx_window,1:4));
             if (pascalScore >= params.pascalThreshold)
                 labels(idx_window) = 1;
                 break;

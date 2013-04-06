@@ -36,17 +36,22 @@ end
 
 function posneg = generatePosNeg(params)
 
-struct = load([params.trainingImages 'structGT.mat']);
-structGT= struct.structGT;
+struct = load([params.trainingImages 'structGT_MOT.mat']);
+structGT = struct.structGT_MOT;
 
-for idx = 1:length(structGT)
-    img = imread([params.trainingImages structGT(idx).img]);
+for idx = length(structGT):-1:1
+    V = VideoReader([params.trainingImages '' structGT(idx).vid]);
+    img = read(V, structGT(idx).frame);
     windows = generateWindows(img,'uniform',params);
     posneg(idx).examples =  windows;
-    labels = - ones(size(windows,1),1);
+    labels = -ones(size(windows,1),1);
     for idx_window = 1:size(windows,1)
-        for bb_id = 1:size(structGT(idx).boxes,1)
-            pascalScore = computePascalScore(structGT(idx).boxes(bb_id,:),windows(idx_window,:));
+        labelled_boxes = structGT(idx).boxes;
+        % if the box from computeScores has a high enough pascal score with
+        %   _any_ of the labels, score it 1 and break
+        for bb_idx = 1:size(labelled_boxes,1)
+            box = labelled_boxes(bb_idx,:);
+            pascalScore = computePascalScore(box, windows(idx_window,:));
             if (pascalScore >= params.pascalThreshold)
                 labels(idx_window) = 1;
                 break;
