@@ -12,7 +12,7 @@ for idxThr = 1:length(params.MS.domain(level,:)) %loop over the possible thresho
     
     scoreThreshold = 0;
     
-    for idxImgGT = 1:length(structGT) %for every img in GT
+    parfor idxImgGT = 1:length(structGT) %for every img in GT
         
         V = VideoReader(fullfile(params.trainingImages, structGT(idxImgGT).vid));
         img = read(V, structGT(idxImgGT).frame);

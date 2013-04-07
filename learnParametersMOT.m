@@ -31,7 +31,9 @@ try
     struct = load([params.trainingExamples '/posnegMS.mat'] );
     posnegMS = struct.posnegMS;
     clear struct;
+    fprintf('loaded posnegMS\n');
 catch    
+    fprintf('creating posnegMS\n');
     posnegMS = generatePosNegMS_MOT(params);
     save([params.trainingExamples '/posnegMS.mat'],'posnegMS');
 end

@@ -1,5 +1,6 @@
-function boxes = computeScoresWithMOT(img_name,cue,params,windows)
-img = imread(fullfile(fileparts(params.MOT.bmfFile), img_name));
+function boxes = computeScoresWithMOT(descriptorGT,cue,params,windows)
+V = VideoReader([params.trainingImages descriptorGT.vid]);
+img = read(V, descriptorGT.frame);
 
 if nargin<4
     %no windows provided - so generate them -> single cues
@@ -64,20 +65,20 @@ if nargin<4
         case 'CC'
             
             windows = generateWindows(img, 'uniform', params);%generate windows
-            boxes = computeScoresWithMOT(img_name, cue, params, windows);
+            boxes = computeScoresWithMOT(descriptorGT, cue, params, windows);
             
         case 'ED'                       
             
             windows = generateWindows(img, 'dense', params, cue);%generate windows           
-            boxes = computeScoresWithMOT(img_name, cue, params, windows);
+            boxes = computeScoresWithMOT(descriptorGT, cue, params, windows);
             
         case 'SS'
             windows = generateWindows(img,'dense', params, cue);
-            boxes = computeScoresWithMOT(img_name, cue, params, windows);
+            boxes = computeScoresWithMOT(descriptorGT, cue, params, windows);
             
         case 'MOT'
             windows = generateWindows(img,'dense', params, cue);
-            boxes = computeScoresWithMOT(img_name, cue, params, windows);
+            boxes = computeScoresWithMOT(descriptorGT, cue, params, windows);
     end
     
 else
@@ -220,64 +221,35 @@ else
         %   straddling, but with segmented trajectory points)
         %   Most code copied from 'SS' case, above
         case 'MOT'
-            fprintf('searching for %s in bmf file.. ', img_name);
-            % first, check to see if 'img' parameter is part of video
-            % sequence definde in params.MOT.bfmFile
-            [~, imgName] = fileparts(img_name);
-            fid = fopen(params.MOT.bmfFile);
-            frame = '';
-            line = fgetl(fid);
-            while ischar(line)
-                if strfind(line, imgName)
-                    frame = line;
-                    break;
-                end
-                line = fgetl(fid);
+            % execute motion segmentation algorithm. Defaults will save
+            % results to moseg2012/marple2/OchsBroxResults/
+            % (max and min ensure the given frame is included)
+            sf = min(params.MOT.startframe, frame_n);
+            ef = max(params.MOT.endframe, frame_n);
+            sampling = params.MOT.theta;
+
+            tracks_f = fullfile(params.MOT.resultsDir, ...
+                ['Tracks' num2str(ef-sf) '_' num2str(sampling) '.dat']);
+            % recompute motion segmentation iff result file does not
+            % exist
+            if ~exist(tracks_f, 'file')
+                cmd = [params.MOT.executable ' ' params.MOT.bmfFile ' ' ...
+                    num2str(sf) ' ' num2str(ef)  ' ' ...
+                    num2str(sampling)];
+                fprintf('%s\n------------\n', cmd);
+                system(cmd);
+                outfile = fullfile(params.MOT.resultsDir, ...
+                    ['Tracks' num2str(ef-sf) '.dat']);
+                movefile(outfile, tracks_f);
             end
-            clear line;
-            fclose(fid);
-            
-            % if we found the matching image, carry on..
-            if ~isempty(frame)
-                fprintf('found!\n');
-                % get frame number of image in question
-                idx = length(frame)-4;
-                while '0' <= frame(idx) && frame(idx) <='9'
-                    idx = idx-1;
-                end
-                n_str = frame(idx+1:length(frame)-4);
-                frame_n = sscanf(n_str, '%d');
-                clear idx n_str;
-                fprintf('frame parsed: %d\n', frame_n);
-                % execute motion segmentation algorithm. Defaults will save
-                % results to moseg2012/marple2/OchsBroxResults/
-                % (max and min ensure the given frame is included)
-                sf = min(params.MOT.startframe, frame_n);
-                ef = max(params.MOT.endframe, frame_n);
-                sampling = params.MOT.theta;
-                
-                tracks_f = fullfile(params.MOT.resultsDir, ...
-                    ['Tracks' num2str(ef-sf) '_' num2str(sampling) '.dat']);
-                % recompute motion segmentation iff result file does not
-                % exist
-                if ~exist(tracks_f, 'file')
-                    cmd = [params.MOT.executable ' ' params.MOT.bmfFile ' ' ...
-                        num2str(sf) ' ' num2str(ef)  ' ' ...
-                        num2str(sampling)];
-                    fprintf('%s\n------------\n', cmd);
-                    system(cmd);
-                    outfile = fullfile(params.MOT.resultsDir, ...
-                        ['Tracks' num2str(ef-sf) '.dat']);
-                    movefile(outfile, tracks_f);
-                end
-                % load trajectories from file
-                fprintf('reading tracks file %s\n', tracks_f);
-                Tracks = readTracksFile(tracks_f);
-                % slice out the frame we want
-                disp('slicing');
-                S = sliceTracks(Tracks, frame_n);
-                
-                % sanity-check plot:
+            % load trajectories from file
+            fprintf('reading tracks file %s\n', tracks_f);
+            Tracks = readTracksFile(tracks_f);
+            % slice out the frame we want
+            disp('slicing');
+            S = sliceTracks(Tracks, frame_n);
+
+            % sanity-check plot:
 %                 colors = 'rbgcyk';
 %                 h = figure();
 %                 hold on;
@@ -289,49 +261,47 @@ else
 %                 pause;
 %                 close(h);
 
-                N = sliceToSuperPixels(S, size(img, 2), size(img,1));
-                % The following is the same as the above  (case 'SS')
-                
-                % superpixels is a struct array with 'points' and 'area'
-                % fields
-                superpixels = segmentArea(N); 
-                % integralHist is a 3D matrix where the kth layer is the
-                % integral image for the kth superpixel. 
-                %   size(integralHist,3) := num of superpixels
-                integralHist = integralHistSuperpixels(N);                        
+            N = sliceToSuperPixels(S, size(img, 2), size(img,1));
+            % The following is the same as the above  (case 'SS')
 
-                xmin = round(windows(:,1));
-                ymin = round(windows(:,2));
-                xmax = round(windows(:,3));
-                ymax = round(windows(:,4));
+            % superpixels is a struct array with 'points' and 'area'
+            % fields
+            superpixels = segmentArea(N); 
+            % integralHist is a 3D matrix where the kth layer is the
+            % integral image for the kth superpixel. 
+            %   size(integralHist,3) := num of superpixels
+            integralHist = integralHistSuperpixels(N);                        
 
-                areaSuperpixels = [superpixels(:).area];
-                areaWindows = (xmax - xmin + 1) .* (ymax - ymin + 1);
+            xmin = round(windows(:,1));
+            ymin = round(windows(:,2));
+            xmax = round(windows(:,3));
+            ymax = round(windows(:,4));
 
-                intersectionSuperpixels = zeros(length(xmin),size(integralHist,3));
+            areaSuperpixels = [superpixels(:).area];
+            areaWindows = (xmax - xmin + 1) .* (ymax - ymin + 1);
 
-                for dim = 1:size(integralHist,3)                
-                    % compute the sum of the integral image _within each
-                    % window_. Since the IIs are binary, this is the
-                    % _count_ of the number of pixels from each SP in each
-                    % window.
-                    % Each ROW corresponds to a window. each COL to a
-                    % superpixel.
-                    intersectionSuperpixels(:,dim) = computeIntegralImageScores(integralHist(:,:,dim),windows);                
-                end
-                % according to the paper:
-                % score = 1 - [SUM over superpixels](min([area inside window], [are outside window]) / [area of window])
-                score = ones(size(windows,1),1) - ...
-                    (sum( ...
-                        min( ... % note that min(), here, is element-wise since the two arguments are matrices of the same size
-                            intersectionSuperpixels, ...
-                            repmat(areaSuperpixels,size(windows,1), 1) - intersectionSuperpixels ...
-                        ), ...
-                     2)./areaWindows);
-                boxes = [windows score];
-            else
-                fprintf('not found =(\n');
+            intersectionSuperpixels = zeros(length(xmin),size(integralHist,3));
+
+            for dim = 1:size(integralHist,3)                
+                % compute the sum of the integral image _within each
+                % window_. Since the IIs are binary, this is the
+                % _count_ of the number of pixels from each SP in each
+                % window.
+                % Each ROW corresponds to a window. each COL to a
+                % superpixel.
+                intersectionSuperpixels(:,dim) = computeIntegralImageScores(integralHist(:,:,dim),windows);                
             end
+            % according to the paper:
+            % score = 1 - [SUM over superpixels](min([area inside window], [are outside window]) / [area of window])
+            score = ones(size(windows,1),1) - ...
+                (sum( ...
+                    min( ... % note that min(), here, is element-wise since the two arguments are matrices of the same size
+                        intersectionSuperpixels, ...
+                        repmat(areaSuperpixels,size(windows,1), 1) - intersectionSuperpixels ...
+                    ), ...
+                 2)./areaWindows);
+            boxes = [windows score];
+
             
         otherwise
             error('Option not known: check the cue names');            
