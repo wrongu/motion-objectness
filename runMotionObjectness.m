@@ -1,12 +1,15 @@
 % Run the combined objectness and motion segmentation algorithm from
-% scratch (including learning parameters)
+% scratch
 %
 % Author: Richard Lange
 % Date Created: March 11, 2013
 
 function boxes = runMotionObjectness(numberSamples, params)
 dir_root = pwd;%change this to an absolute path
-img = params.MOT.frame;
+
+img.vid = 'bear06.avi';
+img.frame = 12;
+
 if nargin < 2
     try            
         struct = load([dir_root '/Data/params.mat']);
@@ -18,10 +21,10 @@ if nargin < 2
     end
 end
 
-if length(params.cues)==1    
+if length(params.cues)==1
     %single cues
     
-    distributionBoxes = computeScoresWithMOT(img,params.cues{1},params); 
+    distributionBoxes = computeScoresWithMOT(img, params.cues{1}, params); 
     
     switch lower(params.sampling)
         case 'nms'

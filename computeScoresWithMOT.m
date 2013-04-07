@@ -145,7 +145,7 @@ else
             imgName = [imgBase '.' imgType];                        
             cd(params.tempdir);            
             imwrite(img,imgName,imgType);            
-            segmFileName = [imgBase '_segm.ppm'];    
+            segmFileName = [imgBase '_segm.ppm'];
             
             if not(exist(segmFileName,'file'))                
                 % convert image to ppm
@@ -163,7 +163,7 @@ else
                 sf = sqrt(Iarea/(300*200));
                 sigma = basis_sigma*sf;
                 min_area = basis_min_area*sf;
-                k = basis_k;                                            
+                k = basis_k;
                 % segment image                
                 cmd = [soft_dir '/segment ' num2str(sigma) ' ' num2str(k) ' ' num2str(min_area) ' "' imgBase '.ppm' '" "' segmFileName '"' ];                
                 system(cmd);                
@@ -224,23 +224,28 @@ else
             % execute motion segmentation algorithm. Defaults will save
             % results to moseg2012/marple2/OchsBroxResults/
             % (max and min ensure the given frame is included)
-            sf = min(params.MOT.startframe, frame_n);
-            ef = max(params.MOT.endframe, frame_n);
+            sf = min(params.MOT.startframe, descriptorGT.frame);
+            ef = max(params.MOT.endframe, descriptorGT.frame);
+            % the only parameter we can really control is sampling. Ideally
+            % we would change the thresholds for segmentation, but we can't
+            % access that aspect of the executable yet
             sampling = params.MOT.theta;
-
-            tracks_f = fullfile(params.MOT.resultsDir, ...
+            nameparts = regexp(descriptorGT.vid, '[^.]+', 'match');
+            class = nameparts{1};
+            tracks_f = fullfile(params.bmf_locations, class, 'OchsBroxResults', ...
                 ['Tracks' num2str(ef-sf) '_' num2str(sampling) '.dat']);
             % recompute motion segmentation iff result file does not
             % exist
             if ~exist(tracks_f, 'file')
-                cmd = [params.MOT.executable ' ' params.MOT.bmfFile ' ' ...
-                    num2str(sf) ' ' num2str(ef)  ' ' ...
+                cmd = [params.MOT.executable ' ' ...
+                    fullfile(params.bmf_locations, class, [class '.bmf']) ...
+                    ' ' num2str(sf) ' ' num2str(ef)  ' ' ...
                     num2str(sampling)];
                 fprintf('%s\n------------\n', cmd);
                 system(cmd);
-                outfile = fullfile(params.MOT.resultsDir, ...
-                    ['Tracks' num2str(ef-sf) '.dat']);
-                movefile(outfile, tracks_f);
+%                 outfile = fullfile(params.MOT.resultsDir, ...
+%                     ['Tracks' num2str(ef-sf) '.dat']);
+%                 movefile(outfile, tracks_f);
             end
             % load trajectories from file
             fprintf('reading tracks file %s\n', tracks_f);
