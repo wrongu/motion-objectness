@@ -3,12 +3,12 @@
 %
 % Author: Richard Lange
 % Date Created: March 11, 2013
+%
+% img is the GT descriptor. it is a struct with fields 'vid' and 'frame'
 
-function boxes = runMotionObjectness(numberSamples, params)
+function [boxes, img] = runMotionObjectness(img, numberSamples, params)
 dir_root = pwd;%change this to an absolute path
 
-img.vid = 'bear06.avi';
-img.frame = 12;
 
 if nargin < 2
     try            

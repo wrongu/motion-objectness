@@ -6,7 +6,7 @@ if nargin<4
     %no windows provided - so generate them -> single cues
     
     switch cue
-    
+        
         case 'MS' %Multi-scale Saliency
             
             xmin = [];
@@ -39,16 +39,16 @@ if nargin<4
                     %keyboard;
                     indexPositives = find(scoreScale>0); %find the index of the windows with positive(>0) score
                     scoreScale = scoreScale(indexPositives);
-                                        
+                    
                     indexSamples = scoreSampling(scoreScale, samples, 1);%sample from the distribution of the scores
-                    scoreScale = scoreScale(indexSamples);                 
-
-                    [xminScale yminScale xmaxScale ymaxScale] = retrieveCoordinates(indexPositives(indexSamples) - 1,scale);%                                        
+                    scoreScale = scoreScale(indexSamples);
+                    
+                    [xminScale yminScale xmaxScale ymaxScale] = retrieveCoordinates(indexPositives(indexSamples) - 1,scale);%
                     xminScale = xminScale*width/scale;
                     xmaxScale = xmaxScale*width/scale;
                     yminScale = yminScale*height/scale;
                     ymaxScale = ymaxScale*height/scale;
-                                        
+                    
                     score = [score;scoreScale];
                     xmin = [xmin ;xminScale];
                     ymin = [ymin ;yminScale];
@@ -67,9 +67,9 @@ if nargin<4
             windows = generateWindows(img, 'uniform', params);%generate windows
             boxes = computeScoresWithMOT(descriptorGT, cue, params, windows);
             
-        case 'ED'                       
+        case 'ED'
             
-            windows = generateWindows(img, 'dense', params, cue);%generate windows           
+            windows = generateWindows(img, 'dense', params, cue);%generate windows
             boxes = computeScoresWithMOT(descriptorGT, cue, params, windows);
             
         case 'SS'
@@ -83,9 +83,9 @@ if nargin<4
     
 else
     %windows are provided so score them
-    switch cue                
-            
-        case 'CC'                         
+    switch cue
+        
+        case 'CC'
             
             [height width ~] = size(img);
             
@@ -96,31 +96,31 @@ else
             xmin = round(windows(:,1));
             ymin = round(windows(:,2));
             xmax = round(windows(:,3));
-            ymax = round(windows(:,4));                             
+            ymax = round(windows(:,4));
             
-            score = computeScoreContrast(double(integralHistogram), height, width, xmin, ymin, xmax, ymax, params.CC.theta, prod(params.CC.quant), size(windows,1));%compute the CC score for the windows                      
+            score = computeScoreContrast(double(integralHistogram), height, width, xmin, ymin, xmax, ymax, params.CC.theta, prod(params.CC.quant), size(windows,1));%compute the CC score for the windows
             boxes = [windows score];
             
         case 'ED'
-                        
-            [~, ~, temp] = size(img);                        
+            
+            [~, ~, temp] = size(img);
             if temp==3
                 edgeMap = edge(rgb2gray(img),'canny');%compute the canny map for 3 channel images
             else
                 edgeMap = edge(img,'canny');%compute the canny map for grey images
-            end            
+            end
             
-            h = computeIntegralImage(edgeMap);  
+            h = computeIntegralImage(edgeMap);
             
             xmin = round(windows(:,1));
             ymin = round(windows(:,2));
             xmax = round(windows(:,3));
-            ymax = round(windows(:,4));                                                                       
+            ymax = round(windows(:,4));
             
             xmaxInner = round((xmax*(200+params.ED.theta)/(params.ED.theta+100) + xmin*params.ED.theta/(params.ED.theta+100)+100/(params.ED.theta+100)-1)/2);
             xminInner  = round(xmax + xmin - xmaxInner);
             ymaxInner = round((ymax*(200+params.ED.theta)/(params.ED.theta+100) + ymin*params.ED.theta/(params.ED.theta+100)+100/(params.ED.theta+100)-1) /2);
-            yminInner  = round(ymax + ymin - ymaxInner);            
+            yminInner  = round(ymax + ymin - ymaxInner);
             
             scoreWindows = computeIntegralImageScores(h,[xmin ymin xmax ymax]);
             scoreInnerWindows = computeIntegralImageScores(h,[xminInner yminInner xmaxInner ymaxInner]);
@@ -134,39 +134,39 @@ else
             
         case 'SS'
             
-            currentDir = pwd;            
+            currentDir = pwd;
             soft_dir = params.SS.soft_dir;
             basis_sigma = params.SS.basis_sigma;
             basis_k = params.SS.theta;
-            basis_min_area = params.SS.basis_min_area;            
-            imgType = params.imageType;                                                                                                                 
-            imgBase = tempname(params.tempdir);%find a unique name for a file in params.tempdir                  
-            imgBase = imgBase(length(params.tempdir)+1:end);                                                         
-            imgName = [imgBase '.' imgType];                        
-            cd(params.tempdir);            
-            imwrite(img,imgName,imgType);            
+            basis_min_area = params.SS.basis_min_area;
+            imgType = params.imageType;
+            imgBase = tempname(params.tempdir);%find a unique name for a file in params.tempdir
+            imgBase = imgBase(length(params.tempdir)+1:end);
+            imgName = [imgBase '.' imgType];
+            cd(params.tempdir);
+            imwrite(img,imgName,imgType);
             segmFileName = [imgBase '_segm.ppm'];
             
-            if not(exist(segmFileName,'file'))                
+            if not(exist(segmFileName,'file'))
                 % convert image to ppm
                 if not(strcmp(imgType, 'ppm'))
                     I = imread(imgName);
                     imwrite(I, [imgBase '.ppm'], 'PPM');
-%                     [~, convert_cmd] = system('which convert');
-%                     cmd = [ convert_cmd ' "' imgName '" "' imgBase '.ppm"' ];            
-%                     system(cmd);
-%                     clear convert_cmd;
-                end                
+                    %                     [~, convert_cmd] = system('which convert');
+                    %                     cmd = [ convert_cmd ' "' imgName '" "' imgBase '.ppm"' ];
+                    %                     system(cmd);
+                    %                     clear convert_cmd;
+                end
                 % setting segmentation params
-%                 I = imread([imgBase '.ppm']);
+                %                 I = imread([imgBase '.ppm']);
                 Iarea = size(I,1)*size(I,2);
                 sf = sqrt(Iarea/(300*200));
                 sigma = basis_sigma*sf;
                 min_area = basis_min_area*sf;
                 k = basis_k;
-                % segment image                
-                cmd = [soft_dir '/segment ' num2str(sigma) ' ' num2str(k) ' ' num2str(min_area) ' "' imgBase '.ppm' '" "' segmFileName '"' ];                
-                system(cmd);                
+                % segment image
+                cmd = [soft_dir '/segment ' num2str(sigma) ' ' num2str(k) ' ' num2str(min_area) ' "' imgBase '.ppm' '" "' segmFileName '"' ];
+                system(cmd);
                 % delete image ppm
                 if not(strcmp(imgType, 'ppm'))
                     delete([imgBase '.ppm']);
@@ -178,9 +178,9 @@ else
                 delete(segmFileName);
             else    % segmentation file found
                 S = imread(segmFileName);
-            end         
+            end
             
-            cd(currentDir);            
+            cd(currentDir);
             % convert 3-channel S to 1-channel N where N(i,j)=k means that
             % pixel (i,j) is in the kth cluster
             N = numerizeLabels(S);
@@ -195,10 +195,10 @@ else
             % get full set of [c;r] pixel coords in each super pixel, and
             % area of each. IE superpixels(k).coords; and
             % superpixels(k).area
-            superpixels = segmentArea(N);            
+            superpixels = segmentArea(N);
             % break N apart and compute integral images (w+1, h+1, n_SS)
             %   dimensions
-            integralHist = integralHistSuperpixels(N);                        
+            integralHist = integralHistSuperpixels(N);
             
             xmin = round(windows(:,1));
             ymin = round(windows(:,2));
@@ -209,17 +209,17 @@ else
             areaWindows = (xmax - xmin + 1) .* (ymax - ymin + 1);
             % size: num windows X num superpixels
             intersectionSuperpixels = zeros(length(xmin),size(integralHist,3));
-                        
-            for dim = 1:size(integralHist,3)                
-                intersectionSuperpixels(:,dim) = computeIntegralImageScores(integralHist(:,:,dim),windows);                
+            
+            for dim = 1:size(integralHist,3)
+                intersectionSuperpixels(:,dim) = computeIntegralImageScores(integralHist(:,:,dim),windows);
             end
-                                    
+            
             score = ones(size(windows,1),1) - (sum(min(intersectionSuperpixels,repmat(areaSuperpixels,size(windows,1),1) - intersectionSuperpixels),2)./areaWindows);
             boxes = [windows score];
-        
-        % New case for motion segmentation (same sort of superpixel
-        %   straddling, but with segmented trajectory points)
-        %   Most code copied from 'SS' case, above
+            
+            % New case for motion segmentation (same sort of superpixel
+            %   straddling, but with segmented trajectory points)
+            %   Most code copied from 'SS' case, above
         case 'MOT'
             % execute motion segmentation algorithm. Defaults will save
             % results to moseg2012/marple2/OchsBroxResults/
@@ -237,79 +237,81 @@ else
             % recompute motion segmentation iff result file does not
             % exist
             if ~exist(tracks_f, 'file')
+                ld_lib_cmd = ['setenv LD_LIBRARY_PATH ~/lib:' ...
+                    '~/motion-objectness/moseg2012:$LD_LIBRARY_PATH'];
                 cmd = [params.MOT.executable ' ' ...
                     fullfile(params.bmf_locations, class, [class '.bmf']) ...
                     ' ' num2str(sf) ' ' num2str(ef)  ' ' ...
                     num2str(sampling)];
                 fprintf('%s\n------------\n', cmd);
-                system(cmd);
-%                 outfile = fullfile(params.MOT.resultsDir, ...
-%                     ['Tracks' num2str(ef-sf) '.dat']);
-%                 movefile(outfile, tracks_f);
+                system([ld_lib_cmd '; ' cmd]);
+                outfile = fullfile(params.bmf_locations, class, 'OchsBroxResults', ...
+                    ['Tracks' num2str(ef-sf) '.dat']);
+                movefile(outfile, tracks_f);
             end
             % load trajectories from file
             fprintf('reading tracks file %s\n', tracks_f);
             Tracks = readTracksFile(tracks_f);
             % slice out the frame we want
             disp('slicing');
-            S = sliceTracks(Tracks, frame_n);
-
+            S = sliceTracks(Tracks, descriptorGT.frame);
+            
             % sanity-check plot:
-%                 colors = 'rbgcyk';
-%                 h = figure();
-%                 hold on;
-%                 for s=1:length(S)
-%                     scatter(S(s).points(1,:), S(s).points(2,:), colors(s));
-%                 end
-%                 hold off;
-%                 set(gca, 'YDir', 'reverse');
-%                 pause;
-%                 close(h);
-
+            %                 colors = 'rbgcyk';
+            %                 h = figure();
+            %                 hold on;
+            %                 for s=1:length(S)
+            %                     scatter(S(s).points(1,:), S(s).points(2,:), colors(s));
+            %                 end
+            %                 hold off;
+            %                 set(gca, 'YDir', 'reverse');
+            %                 pause;
+            %                 close(h);
+            
             N = sliceToSuperPixels(S, size(img, 2), size(img,1));
             % The following is the same as the above  (case 'SS')
-
+            
             % superpixels is a struct array with 'points' and 'area'
             % fields
-            superpixels = segmentArea(N); 
+            superpixels = segmentArea(N);
             % integralHist is a 3D matrix where the kth layer is the
-            % integral image for the kth superpixel. 
+            % integral image for the kth superpixel.
             %   size(integralHist,3) := num of superpixels
-            integralHist = integralHistSuperpixels(N);                        
-
+            integralHist = integralHistSuperpixels(N);
+            
             xmin = round(windows(:,1));
             ymin = round(windows(:,2));
             xmax = round(windows(:,3));
             ymax = round(windows(:,4));
-
+            
             areaSuperpixels = [superpixels(:).area];
             areaWindows = (xmax - xmin + 1) .* (ymax - ymin + 1);
-
+            
             intersectionSuperpixels = zeros(length(xmin),size(integralHist,3));
-
-            for dim = 1:size(integralHist,3)                
+            
+            for dim = 1:size(integralHist,3)
                 % compute the sum of the integral image _within each
                 % window_. Since the IIs are binary, this is the
                 % _count_ of the number of pixels from each SP in each
                 % window.
                 % Each ROW corresponds to a window. each COL to a
                 % superpixel.
-                intersectionSuperpixels(:,dim) = computeIntegralImageScores(integralHist(:,:,dim),windows);                
+                intersectionSuperpixels(:,dim) = computeIntegralImageScores(integralHist(:,:,dim),windows);
             end
             % according to the paper:
             % score = 1 - [SUM over superpixels](min([area inside window], [are outside window]) / [area of window])
             score = ones(size(windows,1),1) - ...
                 (sum( ...
-                    min( ... % note that min(), here, is element-wise since the two arguments are matrices of the same size
-                        intersectionSuperpixels, ...
-                        repmat(areaSuperpixels,size(windows,1), 1) - intersectionSuperpixels ...
-                    ), ...
-                 2)./areaWindows);
+                min( ... % note that min(), here, is element-wise since the two arguments are matrices of the same size
+                intersectionSuperpixels, ...
+                repmat(areaSuperpixels,size(windows,1), 1) - intersectionSuperpixels ...
+                ), ...
+                2)./areaWindows);
             boxes = [windows score];
-
+            
             
         otherwise
-            error('Option not known: check the cue names');            
+            error('Option not known: check the cue names');
     end
 end
 
