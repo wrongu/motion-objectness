@@ -40,6 +40,8 @@ struct = load([params.trainingImages 'structGT_MOT.mat']);
 structGT = struct.structGT_MOT;
 
 for idx = length(structGT):-1:1
+    fprintf('%d/%d reading %s\n', length(structGT)-idx+1, length(structGT), ...
+        [params.trainingImages '' structGT(idx).vid]);
     V = VideoReader([params.trainingImages '' structGT(idx).vid]);
     img = read(V, structGT(idx).frame);
     windows = generateWindows(img,'uniform',params);
@@ -60,6 +62,7 @@ for idx = length(structGT):-1:1
     end
     posneg(idx).labels = labels;
     posneg(idx).img = img;
+    posneg(idx).descGT = structGT(idx);
 end
 
 end
@@ -79,7 +82,7 @@ neg = 0;
 for idx = 1:length(posneg)
     
     % computeScoresWithMOT returns a set of boxes (windows with scores)
-    temp = computeScoresWithMOT(posneg(idx).img,cue,params,posneg(idx).examples);
+    temp = computeScoresWithMOT(posneg(idx).descGT,cue,params,posneg(idx).examples);
     posneg(idx).scores = temp(:,end);
     
     indexPositive = find(posneg(idx).labels == 1);

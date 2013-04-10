@@ -1,7 +1,7 @@
 % TODO - redefine the structGT thing so it works with annotated video data
 % for training examples
 
-function params = learnParametersMOT(pathNewTrainingFolder,dir_root)
+function params = learnParametersMOT(pathNewTrainingFolder,dir_root,skip_MS)
 %learns the parameters of the objectness function: theta_MS (for 5 scales),
 %theta_CC, theta_ED, theta_SS, theta_MOT and also the likelihoods corresp to each cue
 
@@ -10,6 +10,11 @@ if nargin < 2
     dir_root = [pwd '/'];
 end
 params = defaultParams(dir_root);
+
+
+if nargin < 3
+    skip_MS = false;
+end
 
 if nargin == 1
     %train the parameters from another dataset
@@ -21,24 +26,38 @@ if nargin == 1
     cd(origDir);
 end
 
-%learn parameters for MS
-for idx = 1: length(params.MS.scale)
-    scale = params.MS.scale(idx);   
-    params.MS.theta(idx) = learnThetaMSMOT(params,scale); 
+if ~skip_MS || ~exist([params.trainingExamples '/posnegMS.mat'], 'file')
+    if skip_MS && ~exist([params.trainingExamples '/posnegMS.mat'], 'file')
+        fprintf('computing MS because posnegMS.mat does not exist');
+    end
+    if skip_MS && exist([params.trainingExamples '/saveMSTheta.mat'], 'file')
+        load([params.trainingExamples '/saveMSTheta.mat']);
+        fprintf('skipped thetaMS calculation\n');
+    else
+        %learn parameters for MS
+        for idx = 1: length(params.MS.scale)
+            scale = params.MS.scale(idx);   
+            params.MS.theta(idx) = learnThetaMSMOT(params,scale); 
+        end
+
+        save([params.trainingExamples '/saveMSTheta.mat'], 'params');
+    end
+
+    try 
+        struct = load([params.trainingExamples '/posnegMS.mat'] );
+        posnegMS = struct.posnegMS;
+        clear struct;
+        fprintf('loaded posnegMS\n');
+    catch    
+        fprintf('creating posnegMS\n');
+        posnegMS = generatePosNegMS_MOT(params);
+        save([params.trainingExamples '/posnegMS.mat'],'posnegMS');
+    end
+else
+    load([params.trainingExamples '/posnegMS.mat']);
 end
 
-try 
-    struct = load([params.trainingExamples '/posnegMS.mat'] );
-    posnegMS = struct.posnegMS;
-    clear struct;
-    fprintf('loaded posnegMS\n');
-catch    
-    fprintf('creating posnegMS\n');
-    posnegMS = generatePosNegMS_MOT(params);
-    save([params.trainingExamples '/posnegMS.mat'],'posnegMS');
-end
-
-[~, pObj] = deriveLikelihoodMS(posnegMS,params);
+[likelihood, pObj] = deriveLikelihoodMS(posnegMS,params);
 save([params.yourData 'MSlikelihood.mat'],'likelihood');
 params.pObj = pObj;
 
@@ -65,7 +84,7 @@ structGT = struct.structGT_MOT;
 for idx = length(structGT):-1:1
     V = VideoReader(fullfile(params.trainingImages, structGT(idx).vid));
     img = read(V, structGT(idx).frame);
-    boxes = computeScoresWithMOT(img,'MS',params);        
+    boxes = computeScoresWithMOT(structGT(idx),'MS',params);        
     posneg(idx).examples = boxes(:,1:4);
     labels = -ones(size(boxes,1),1);
     for idx_window = 1:size(boxes,1)        
