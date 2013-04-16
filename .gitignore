@@ -3,3 +3,5 @@ tmpdir/
 *.m~
 segment/
 Data/yourData
+Training/BMF/
+
