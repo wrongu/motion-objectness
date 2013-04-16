@@ -359,3 +359,4 @@ saliencyMAP = abs(ifft2(exp(mySpectralResidual+1i*myPhase))).^2;
 saliencyMAP = imfilter(saliencyMAP,fspecial('disk',filtersize));
 saliencyMAP = mat2gray(saliencyMAP);
 end
+
