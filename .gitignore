@@ -3,3 +3,4 @@ tmpdir/
 *.m~
 segment/
 Training/BMF/
+*.avi
