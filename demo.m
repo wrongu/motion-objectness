@@ -7,7 +7,7 @@
 
 % params.MOT.bmfFile = 'moseg2012/marple2/marple2.bmf';
 
-img.vid = 'bear06.avi';
+img.vid = 'airplane09.avi';
 img.frame = 12;
 boxes = runMotionObjectness(img, 10,params);
 V = VideoReader(fullfile(params.trainingImages, img.vid));

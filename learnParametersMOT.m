@@ -1,7 +1,7 @@
 % TODO - redefine the structGT thing so it works with annotated video data
 % for training examples
 
-function params = learnParametersMOT(pathNewTrainingFolder,dir_root,skip_MS)
+function params = learnParametersMOT(pathNewTrainingFolder,dir_root,skip)
 %learns the parameters of the objectness function: theta_MS (for 5 scales),
 %theta_CC, theta_ED, theta_SS, theta_MOT and also the likelihoods corresp to each cue
 
@@ -13,7 +13,7 @@ params = defaultParams(dir_root);
 
 
 if nargin < 3
-    skip_MS = false;
+    skip = false;
 end
 
 if nargin == 1
@@ -26,11 +26,11 @@ if nargin == 1
     cd(origDir);
 end
 
-if ~skip_MS || ~exist([params.trainingExamples '/posnegMS.mat'], 'file')
-    if skip_MS && ~exist([params.trainingExamples '/posnegMS.mat'], 'file')
+if ~skip || ~exist([params.trainingExamples '/posnegMS.mat'], 'file')
+    if skip && ~exist([params.trainingExamples '/posnegMS.mat'], 'file')
         fprintf('computing MS because posnegMS.mat does not exist');
     end
-    if skip_MS && exist([params.trainingExamples '/saveMSTheta.mat'], 'file')
+    if skip && exist([params.trainingExamples '/saveMSTheta.mat'], 'file')
         load([params.trainingExamples '/saveMSTheta.mat']);
         fprintf('skipped thetaMS calculation\n');
     else
@@ -54,7 +54,8 @@ if ~skip_MS || ~exist([params.trainingExamples '/posnegMS.mat'], 'file')
         save([params.trainingExamples '/posnegMS.mat'],'posnegMS');
     end
 else
-    load([params.trainingExamples '/posnegMS.mat']);
+    fprintf('skipping MS - loading from previous save');
+	load([params.trainingExamples '/posnegMS.mat']);
 end
 
 [likelihood, pObj] = deriveLikelihoodMS(posnegMS,params);
@@ -66,8 +67,14 @@ cues = {'CC','ED','SS','MOT'};
 
 for cid = 1:length(cues)
     cue = cues{cid};
-    [thetaOpt, ~, ~] = learnThetaWithMOT(cue,params);
-    params.(cue).theta = thetaOpt;    
+    if ~skip || ~exist(['learnTheta_' cue '.mat'], 'file')
+        fprintf('computing %s, save exists = %d\n', cue, exist(['learnTheta_' cue '.mat'], 'file') > 0);
+	[thetaOpt, ~, ~] = learnThetaWithMOT(cue,params);
+    else
+        fprintf('loading cues %s from save\n', cue);
+	load(['learnTheta_' cue '.mat']);
+    end
+        params.(cue).theta = thetaOpt;  
     save([params.yourData upper(cue) 'likelihood'],'likelihood');
 end
     

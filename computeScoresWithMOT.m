@@ -1,7 +1,7 @@
 function boxes = computeScoresWithMOT(descriptorGT,cue,params,windows)
 V = VideoReader([params.trainingImages descriptorGT.vid]);
 img = read(V, descriptorGT.frame);
-
+vdata = get(V, {'NumberOfFrames'});
 if nargin<4
     %no windows provided - so generate them -> single cues
     
@@ -142,30 +142,36 @@ else
             imgType = params.imageType;
             imgBase = tempname(params.tempdir);%find a unique name for a file in params.tempdir
             imgBase = imgBase(length(params.tempdir)+1:end);
-            imgName = [imgBase '.' imgType];
+            %imgName = [imgBase '.' imgType];
+            imgName = [imgBase '.ppm'];
             cd(params.tempdir);
-            imwrite(img,imgName,imgType);
+            fprintf('imwrite(img@[%d x %d], "%s", "%s")\n', size(img, 2), size(img, 1), imgName, 'PPM');
+            imwrite(img,imgName,'PPM');
+            if ~exist(imgName, 'file')
+                error('imwrite didnt work..?\n');
+            end
             segmFileName = [imgBase '_segm.ppm'];
             
             if not(exist(segmFileName,'file'))
                 % convert image to ppm
-                if not(strcmp(imgType, 'ppm'))
-                    I = imread(imgName);
-                    imwrite(I, [imgBase '.ppm'], 'PPM');
-                    %                     [~, convert_cmd] = system('which convert');
-                    %                     cmd = [ convert_cmd ' "' imgName '" "' imgBase '.ppm"' ];
-                    %                     system(cmd);
-                    %                     clear convert_cmd;
-                end
+%                 if not(strcmp(imgName(end-2:end), 'ppm'))
+%                     %I = imread(imgName);
+%                     imwrite(img, [imgBase '.ppm'], 'PPM');
+%                     %                     [~, convert_cmd] = system('which convert');
+%                     %                     cmd = [ convert_cmd ' "' imgName '" "' imgBase '.ppm"' ];
+%                     %                     system(cmd);
+%                     %                     clear convert_cmd;
+%                 end
                 % setting segmentation params
                 %                 I = imread([imgBase '.ppm']);
-                Iarea = size(I,1)*size(I,2);
+                Iarea = size(img,1)*size(img,2);
                 sf = sqrt(Iarea/(300*200));
                 sigma = basis_sigma*sf;
                 min_area = basis_min_area*sf;
                 k = basis_k;
                 % segment image
                 cmd = [soft_dir '/segment ' num2str(sigma) ' ' num2str(k) ' ' num2str(min_area) ' "' imgBase '.ppm' '" "' segmFileName '"' ];
+                fprintf('running cmd:\n\t%s\n',cmd);
                 system(cmd);
                 % delete image ppm
                 if not(strcmp(imgType, 'ppm'))
@@ -185,12 +191,12 @@ else
             % pixel (i,j) is in the kth cluster
             N = numerizeLabels(S);
             
-            subplot(1,2,1);
-            image(N*64/max(max(N)));
-            set(gca, 'YDir', 'reverse');
-            subplot(1,2,2);
-            image(img);
-            pause;
+%             subplot(1,2,1);
+%             image(N*64/max(max(N)));
+%             set(gca, 'YDir', 'reverse');
+%             subplot(1,2,2);
+%             image(img);
+%             pause;
             
             % get full set of [c;r] pixel coords in each super pixel, and
             % area of each. IE superpixels(k).coords; and
@@ -223,9 +229,10 @@ else
         case 'MOT'
             % execute motion segmentation algorithm. Defaults will save
             % results to moseg2012/marple2/OchsBroxResults/
-            % (max and min ensure the given frame is included)
-            sf = min(params.MOT.startframe, descriptorGT.frame);
-            ef = max(params.MOT.endframe, descriptorGT.frame);
+            % (max and min ensure the given frame is included, and their position
+	    % is chosen so that GT.frame is at the end of the sequence considered.
+	    sf = max(1, descriptorGT.frame - params.MOT.nframes + 1);
+	    ef = min(sf + params.MOT.nframes - 1, vdata{1});
             % the only parameter we can really control is sampling. Ideally
             % we would change the thresholds for segmentation, but we can't
             % access that aspect of the executable yet
@@ -233,20 +240,22 @@ else
             nameparts = regexp(descriptorGT.vid, '[^.]+', 'match');
             class = nameparts{1};
             tracks_f = fullfile(params.bmf_locations, class, 'OchsBroxResults', ...
-                ['Tracks' num2str(ef-sf) '_' num2str(sampling) '.dat']);
+                ['Tracks' num2str(sf) '_' num2str(ef) '_' num2str(sampling) '.dat']);
             % recompute motion segmentation iff result file does not
             % exist
             if ~exist(tracks_f, 'file')
-                ld_lib_cmd = ['setenv LD_LIBRARY_PATH ~/lib:' ...
+                ld_lib_cmd = ['export LD_LIBRARY_PATH=~/lib:' ...
                     '~/motion-objectness/moseg2012:$LD_LIBRARY_PATH'];
                 cmd = [params.MOT.executable ' ' ...
                     fullfile(params.bmf_locations, class, [class '.bmf']) ...
                     ' ' num2str(sf) ' ' num2str(ef)  ' ' ...
                     num2str(sampling)];
                 fprintf('%s\n------------\n', cmd);
+		tstart = tic;
                 system([ld_lib_cmd '; ' cmd]);
-                outfile = fullfile(params.bmf_locations, class, 'OchsBroxResults', ...
-                    ['Tracks' num2str(ef-sf) '.dat']);
+                fprintf('motion segmentation algorithm finished in %d seconds\n', toc(tstart));
+		outfile = fullfile(params.bmf_locations, class, 'OchsBroxResults', ...
+                    ['Tracks' num2str(ef-sf+1) '.dat']);
                 movefile(outfile, tracks_f);
             end
             % load trajectories from file

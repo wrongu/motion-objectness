@@ -6,11 +6,11 @@
 %
 % img is the GT descriptor. it is a struct with fields 'vid' and 'frame'
 
-function [boxes, img] = runMotionObjectness(img, numberSamples, params)
+function boxes = runMotionObjectness(img, numberSamples, params)
 dir_root = pwd;%change this to an absolute path
 
 
-if nargin < 2
+if nargin < 3
     try            
         struct = load([dir_root '/Data/params.mat']);
         params = struct.params;

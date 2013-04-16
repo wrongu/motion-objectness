@@ -17,18 +17,20 @@ end
 
 bestValue = -inf;
 thetaOpt = 0;
-
+log_history = zeros(length(params.(cue).domain), 1);
 % the DOMAIN for a given cue is the values of theta to search.
 for idx = 1:length(params.(cue).domain)
-    
+    fprintf('%s domain %d of %d\n', cue, idx, length(params.(cue).domain));
     theta = params.(cue).domain(idx);
     [likelihood  pobj  logTotal] = deriveLikelihood(posneg,theta,params,cue);
+    log_history(idx) = logTotal;
     if bestValue < logTotal
         thetaOpt = theta;
         likelihoodOpt = likelihood;
         bestValue = logTotal;
     end
     fprintf('Best current theta for %s is %f \n',cue,thetaOpt)
+    save(['learnTheta_' cue '.mat'], 'thetaOpt', 'likelihoodOpt', 'pobj', 'log_history'); 
 end
 
 end
