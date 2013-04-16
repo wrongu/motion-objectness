@@ -1,13 +1,16 @@
 % Run the combined objectness and motion segmentation algorithm from
-% scratch (including learning parameters)
+% scratch
 %
 % Author: Richard Lange
 % Date Created: March 11, 2013
+%
+% img is the GT descriptor. it is a struct with fields 'vid' and 'frame'
 
-function boxes = runMotionObjectness(numberSamples, params)
+function boxes = runMotionObjectness(img, numberSamples, params)
 dir_root = pwd;%change this to an absolute path
-img = params.MOT.frame;
-if nargin < 2
+
+
+if nargin < 3
     try            
         struct = load([dir_root '/Data/params.mat']);
         params = struct.params;
@@ -18,10 +21,10 @@ if nargin < 2
     end
 end
 
-if length(params.cues)==1    
+if length(params.cues)==1
     %single cues
     
-    distributionBoxes = computeScoresWithMOT(img,params.cues{1},params); 
+    distributionBoxes = computeScoresWithMOT(img, params.cues{1}, params); 
     
     switch lower(params.sampling)
         case 'nms'

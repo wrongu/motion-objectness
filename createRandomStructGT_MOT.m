@@ -16,7 +16,7 @@ function structGT_MOT = createRandomStructGT_MOT(n_ex, params)
         % save box annotations for this frame
         annot = a.annotations{f};
         structGT_MOT(idx).boxes = ...
-            [annot.xtl annot.ytl annot.xbr annot.ybr] + 1;
-        structGT_MOT(idx).annot_dim = [a.width a.height];
+            scale_box(VideoReader(fullfile(params.trainingImages, vids{r})), ...
+            [annot.xtl annot.ytl annot.xbr annot.ybr], a.width, a.height) + 1;
     end
 end

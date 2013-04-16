@@ -23,7 +23,7 @@ for c=1:length(classes)
                 writer = VideoWriter(fullfile(top_dir, 'combined', ...
                     sprintf('%s%.2d_annot.avi', cname, v)));
                 open(writer);
-		writeVideo(writer, mov);
+                writeVideo(writer, mov);
             end
         end
     end
